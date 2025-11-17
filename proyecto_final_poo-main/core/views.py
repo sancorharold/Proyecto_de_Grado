@@ -2,12 +2,17 @@ from django.shortcuts import render
 from django.views.generic import ListView,CreateView,UpdateView,DeleteView, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from core.mixins import TitleContextMixin
-from core.forms import SupplierForm
-from .models import Customer, Supplier 
-from django.shortcuts import redirect, render
+from core.forms import SupplierForm, BrandForm
+from .models import Customer, Supplier, Brand
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.db import models
 from django.db.models import Q
 from django.urls import reverse_lazy
+from django.http import JsonResponse
 from django.views.generic import CreateView, ListView, UpdateView, DeleteView,DetailView
+from django.views import View
+
 
 
 def home(request):
@@ -58,6 +63,43 @@ class SupplierCreateView(LoginRequiredMixin,TitleContextMixin,CreateView):
         form.instance.user = self.request.user
         return super().form_valid(form)
 
+class BrandListView(LoginRequiredMixin, TitleContextMixin, ListView):
+    model = Brand
+    template_name = "brand/list.html"
+    context_object_name = 'brands'
+    title2 = "Listado de Marcas"
+
+class BrandCreateView(LoginRequiredMixin, TitleContextMixin, CreateView):
+    model = Brand
+    form_class = BrandForm
+    template_name = "brand/form.html" # Deberás crear esta plantilla
+    success_url = reverse_lazy("core:brand_list") # Deberás crear esta URL
+    title1 = "Marcas"
+    title2 = "Crear Nueva Marca"
+
+class BrandUpdateView(LoginRequiredMixin, TitleContextMixin, UpdateView):
+    model = Brand
+    form_class = BrandForm
+    template_name = "brand/form.html"
+    success_url = reverse_lazy("core:brand_list")
+    title1 = "Marcas"
+    title2 = "Editar Marca"
+
+class BrandDeleteView(LoginRequiredMixin, TitleContextMixin, DeleteView):
+    model = Brand
+    template_name = "brand/delete.html"
+    success_url = reverse_lazy("core:brand_list")
+    title1 = "Marcas"
+    title2 = "Eliminar Marca"
+
+    def post(self, request, *args, **kwargs):
+        try:
+            return super().post(request, *args, **kwargs)
+        except models.ProtectedError:
+            messages.error(request, 'No se puede eliminar esta marca porque tiene productos asociados.')
+            return redirect('core:brand_list')
+
+
 class SupplierUpdateView(LoginRequiredMixin,TitleContextMixin,UpdateView):
     model = Supplier
     form_class = SupplierForm
@@ -66,10 +108,6 @@ class SupplierUpdateView(LoginRequiredMixin,TitleContextMixin,UpdateView):
     title1 = '"Proveedores"'
     title2 = 'Editar Proveedor'
    
-    def form_valid(self, form):
-        form.instance.user = self.request.user
-        return super().form_valid(form)
-
 
 class SupplierDetailView(LoginRequiredMixin, TitleContextMixin, DetailView):
     model = Supplier
@@ -86,4 +124,20 @@ class SupplierDeleteView(LoginRequiredMixin,TitleContextMixin,DeleteView):
     title1 = "Eliminar"
     title2 = 'Eliminar Proveedor VBC'
    
+class CustomerSearchView(LoginRequiredMixin, View):
+    def get(self, request):
+        query = request.GET.get('term', '')
+        customers = Customer.objects.filter(
+            Q(first_name__icontains=query) | 
+            Q(last_name__icontains=query) | 
+            Q(dni__icontains=query)
+        ).filter(state=True)[:10]  # Limita a 10 resultados
 
+        results = []
+        for customer in customers:
+            results.append({
+                'id': customer.id,
+                'text': customer.get_full_name
+            })
+
+        return JsonResponse({'results': results})

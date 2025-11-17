@@ -9,4 +9,6 @@ urlpatterns = [
    path('invoice_detail/<int:pk>/', views.InvoiceDetailView.as_view(), name='invoice_detail'),
    path('invoice_annul/<int:pk>/', views.InvoiceAnnulView.as_view(),   name='invoice_annul'),
    path('invoice_delete/<int:pk>/', views.InvoiceDeleteView.as_view(), name='invoice_delete'),
+   path('invoice_print/<int:pk>/', views.InvoicePrintView.as_view(),  name='invoice_print'), #Imprimir factura
+   
 ]

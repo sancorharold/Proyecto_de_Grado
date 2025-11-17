@@ -37,8 +37,8 @@
       <div class="col-lg-4 col-md-6">
         <div class="p-3 border rounded bg-light shadow-sm text-center">
           <label class="form-label text-muted mb-1">Subtotal</label>
-          <div class="h4 fw-bold text-dark mb-0">
-            {{ form.subtotal }}
+          <div class="h4 fw-bold text-dark mb-0" id="subtotal-display">
+            $0.00
           </div>
         </div>
       </div>
@@ -46,8 +46,8 @@
       <div class="col-lg-4 col-md-6">
         <div class="p-3 border rounded bg-light shadow-sm text-center">
           <label class="form-label text-muted mb-1">IVA</label>
-          <div class="h4 fw-bold text-dark mb-0">
-            {{ form.iva }}
+          <div class="h4 fw-bold text-dark mb-0" id="iva-display">
+            $0.00
           </div>
         </div>
       </div>
@@ -55,7 +55,7 @@
       <div class="col-lg-4 col-md-12">
         <div class="p-3 border rounded bg-success text-white shadow text-center">
           <label class="form-label text-uppercase fw-bold mb-1">Total</label>
-          <div class="h3 fw-bold mb-0">{{ form.total }}</div>
+          <div class="h3 fw-bold mb-0" id="total-display">$0.00</div>
         </div>
       </div>
     </div>
@@ -149,3 +149,32 @@
 </script>
 <script src="{% static 'js/invoices/sales.js' %}"></script>
 {% endblock content %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('.select2').select2({
+        placeholder: "Busque un cliente por nombre o DNI",
+        allowClear: true,
+        ajax: {
+            url: function () {
+                return $(this).data('url');
+            },
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    term: params.term // término de búsqueda
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.results
+                };
+            },
+            cache: true
+        }
+    });
+});
+</script>
+{% endblock scripts %}

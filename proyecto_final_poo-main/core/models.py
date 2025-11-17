@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from decimal import Decimal
 from core.utils import phone_validator
 from core.constants import CustomerGender, ProductIva, ProductLine
+from django.db.models import F
 
 class Supplier(models.Model):
     name = models.CharField(max_length=100)
@@ -32,7 +33,6 @@ class Customer(models.Model):
     phone = models.CharField(max_length=10,validators=[phone_validator])
     email = models.EmailField(verbose_name='Correo',max_length=100, blank=True, null=True)
     image = models.ImageField(verbose_name='Foto',upload_to='customers/',blank=True,null=True,default='customers/default.png')
-    user = models.ForeignKey(User,on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     state = models.BooleanField(verbose_name='Activo', default = True)
@@ -63,7 +63,7 @@ class ActiveBrandManager(models.Manager):
     
 class Brand(models.Model):
     description = models.CharField('Articulo',max_length=100)
-    user = models.ForeignKey(User,on_delete=models.CASCADE)
+    supplier = models.ForeignKey(Supplier, on_delete=models.PROTECT, related_name='brands', verbose_name='Proveedor')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     state = models.BooleanField('Activo', default = True)
@@ -93,9 +93,8 @@ class Product(models.Model):
     stock=models.IntegerField(default=100,help_text="Stock debe estar en 0 y 10000 unidades",verbose_name='Stock')
     iva = models.IntegerField(verbose_name='IVA', choices=ProductIva.choices, default=ProductIva.FIFTEEN)
     expiration_date = models.DateTimeField('Fecha Caducidad',default=timezone.now)
-    brand = models.ForeignKey(Brand,on_delete=models.CASCADE,related_name='product',verbose_name='Marca')
-    user = models.ForeignKey(User,on_delete=models.CASCADE)
-    supplier = models.OneToOneField(Supplier,on_delete=models.CASCADE,verbose_name='Proveedor')
+    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name='products', verbose_name='Marca')
+    user = models.ForeignKey(User, on_delete=models.CASCADE) # Para saber qué empleado registró el producto
     categories = models.ManyToManyField('Category',verbose_name='Categoria')
     line = models.CharField('Linea',max_length=2,choices=ProductLine.choices,default=ProductLine.COMISARIATO)
     image = models.ImageField(upload_to='products/',blank=True,null=True,default='products/default.png')
@@ -127,11 +126,10 @@ class Product(models.Model):
         
     @staticmethod
     def update_stock(self,id,quantity):
-         Product.objects.filter(pk=id).update(stock=F('stock') - quantity)
+        Product.objects.filter(pk=id).update(stock=F('stock') - quantity)
             
 class Category(models.Model):
     description = models.CharField(verbose_name='Categoria',max_length=100)
-    user = models.ForeignKey(User,on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     state = models.BooleanField('Activo', default = True)

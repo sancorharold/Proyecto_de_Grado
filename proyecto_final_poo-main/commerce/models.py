@@ -31,6 +31,7 @@ class Invoice(models.Model):
         return f"{self.id} - {self.customer}"
 
 
+
 class InvoiceDetail(models.Model):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE,related_name='detail',verbose_name='Factura')
     product = models.ForeignKey(Product, on_delete=models.PROTECT,related_name='Product',verbose_name='Producto')
@@ -80,7 +81,7 @@ class Purchase(models.Model):
 class PurchaseDetail(models.Model):
     purchase = models.ForeignKey(Purchase, on_delete=models.PROTECT,related_name='purchase_detail',verbose_name='Compra')
     product = models.ForeignKey(Product, on_delete=models.PROTECT,related_name='purchase_products')
-    quantify = models.DecimalField(verbose_name='Cantidad',default=0, max_digits=8, decimal_places=2)
+    quantity = models.DecimalField(verbose_name='Cantidad',default=0, max_digits=8, decimal_places=2)
     cost = models.DecimalField(verbose_name='Costo',default=0, max_digits=16, decimal_places=2)
     subtotal = models.DecimalField(verbose_name='subtototal',default=0, max_digits=16, decimal_places=2)
     iva = models.DecimalField(verbose_name='Iva',default=0, max_digits=16, decimal_places=2)

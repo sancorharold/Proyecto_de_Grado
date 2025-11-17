@@ -44,7 +44,11 @@
           <button type="button" class="btn btn-sm btn-outline-primary view-detail" data-id="{{ item.id }}">
             🔎 Ver
           </button>
-          <a href="{% url 'commerce:invoice_update' item.id %}" title="Editar">✏️</a>
+          
+          <!-- Apartado Para el boton de Impprimir -->
+          <a href="{% url 'commerce:invoice_print' item.id %}" target="_blank" class="btn btn-sm btn-info" title="Imprimir">🖨️</a>
+          
+          <a href="{% url 'commerce:invoice_update' item.id %}" class="btn btn-sm btn-warning" title="Editar">✏️</a>
         </td>
       </tr>
       {% empty %}
