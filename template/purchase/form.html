@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ title2 }}{% endblock %}
+
+{% block content %}
+<h1 class="mt-4 mb-3">{{ title2 }}</h1>
+
+<div class="card shadow">
+    <div class="card-body">
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label>Proveedor:</label>
+                    {{ form.supplier }}
+                </div>
+
+                <div class="col-md-6">
+                    <label>Número de Documento:</label>
+                    {{ form.num_document }}
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label>Fecha de Emisión:</label>
+                    {{ form.issue_date }}
+                </div>
+                <div class="col-md-4">
+                    <label>Subtotal:</label>
+                    {{ form.subtotal }}
+                </div>
+                <div class="col-md-4">
+                    <label>IVA:</label>
+                    {{ form.iva }}
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <label>Total:</label>
+                    {{ form.total }}
+                </div>
+            </div>
+
+            <div class="text-end">
+                <a class="btn btn-secondary" href="{% url 'purchase:purchase_list' %}">Cancelar</a>
+                <button class="btn btn-success">Guardar</button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ title2 }}{% endblock %}
+
+{% block content %}
+<h1 class="mt-4 mb-3 text-danger">{{ title2 }}</h1>
+
+<div class="card shadow">
+    <div class="card-body">
+
+        <p class="fs-5">
+            ¿Estás seguro de que deseas eliminar la compra  
+            <strong>"{{ object.num_document|default:'S/N' }}"</strong> del proveedor 
+            <strong>{{ object.supplier.name }}</strong>?
+        </p>
+
+        <p class="text-muted">
+            Esta acción no se puede deshacer.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="text-end mt-3">
+                <a href="{% url 'purchase:purchase_list' %}" class="btn btn-secondary">Cancelar</a>
+                <button class="btn btn-danger">Eliminar</button>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}
