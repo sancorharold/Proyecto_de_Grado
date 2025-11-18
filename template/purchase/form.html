@@ -1,56 +1,113 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}{{ title2 }}{% endblock %}
 
 {% block content %}
 <h1 class="mt-4 mb-3">{{ title2 }}</h1>
 
 <div class="card shadow">
-    <div class="card-body">
+  <div class="card-body">
+    <form id="frmPurchase" method="post">
+      {% csrf_token %}
 
-        <form method="post">
-            {% csrf_token %}
+      <!-- Cabecera de la Compra -->
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <label>Proveedor:</label>
+          {{ form.supplier }}
+        </div>
+        <div class="col-md-4">
+          <label>Número de Documento:</label>
+          {{ form.num_document }}
+        </div>
+        <div class="col-md-4">
+          <label>Fecha de Emisión:</label>
+          {{ form.issue_date }}
+        </div>
+      </div>
 
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label>Proveedor:</label>
-                    {{ form.supplier }}
-                </div>
+      <hr>
 
-                <div class="col-md-6">
-                    <label>Número de Documento:</label>
-                    {{ form.num_document }}
-                </div>
-            </div>
+      <!-- Sección para Añadir Productos -->
+      <div class="row g-3 align-items-end mb-3">
+        <div class="col-md-4">
+          <label>Producto:</label>
+          <select id="product" class="form-control">
+            <option value="">-- Seleccione un producto --</option>
+            {% for product in products %}
+            <option value="{{ product.id }}" data-iva="{{ product.iva }}">{{ product.description }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label>Cantidad:</label>
+          <input type="number" id="quantity" class="form-control" value="1" min="1">
+        </div>
+        <div class="col-md-2">
+          <label>Costo Unitario:</label>
+          <input type="number" id="cost" class="form-control" value="0.00" step="0.01" min="0">
+        </div>
+        <div class="col-md-2">
+          <button type="button" id="btnAdd" class="btn btn-primary w-100">Añadir</button>
+        </div>
+      </div>
 
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <label>Fecha de Emisión:</label>
-                    {{ form.issue_date }}
-                </div>
-                <div class="col-md-4">
-                    <label>Subtotal:</label>
-                    {{ form.subtotal }}
-                </div>
-                <div class="col-md-4">
-                    <label>IVA:</label>
-                    {{ form.iva }}
-                </div>
-            </div>
+      <!-- Tabla de Detalle de Compra -->
+      <table class="table table-striped table-bordered mt-4">
+        <thead class="table-dark">
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Costo</th>
+            <th>Subtotal</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="purchase-details">
+          <!-- Filas de productos se insertarán aquí -->
+        </tbody>
+      </table>
 
-            <div class="row mb-4">
-                <div class="col-md-12">
-                    <label>Total:</label>
-                    {{ form.total }}
-                </div>
-            </div>
+      <!-- Totales -->
+      <div class="row justify-content-end mt-3">
+        <div class="col-md-4">
+          <div class="input-group mb-2">
+            <span class="input-group-text" style="width: 100px;">Subtotal</span>
+            {{ form.subtotal }}
+          </div>
+          <div class="input-group mb-2">
+            <span class="input-group-text" style="width: 100px;">IVA</span>
+            {{ form.iva }}
+          </div>
+          <div class="input-group">
+            <span class="input-group-text fw-bold" style="width: 100px;">TOTAL</span>
+            {{ form.total }}
+          </div>
+        </div>
+      </div>
 
-            <div class="text-end">
-                <a class="btn btn-secondary" href="{% url 'purchase:purchase_list' %}">Cancelar</a>
-                <button class="btn btn-success">Guardar</button>
-            </div>
-
-        </form>
-
-    </div>
+      <!-- Botones de Acción -->
+      <div class="text-end mt-4">
+        <a class="btn btn-secondary" href="{% url 'purchase:purchase_list' %}">Cancelar</a>
+        <button type="submit" class="btn btn-success">Guardar Compra</button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+  // Pasamos las URLs de Django al script de JavaScript
+  const save_url = "{% url 'purchase:purchase_create' %}";
+  const purchase_list_url = "{% url 'purchase:purchase_list' %}";
+  
+  // Pasamos los detalles existentes si estamos en modo edición, o un array vacío si es una nueva compra.
+  {% if form.instance.pk and detail_purchases %}
+  const detail_purchases = JSON.parse('{{ detail_purchases|safe }}');
+  {% else %}
+  const detail_purchases = [];
+  {% endif %}
+</script>
+<script src="{% static 'js/purchases/purchases.js' %}"></script>
+{% endblock scripts %}
