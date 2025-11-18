@@ -14,12 +14,12 @@ class PurchaseForm(forms.ModelForm):
             "total",
         ]
         widgets = {
-            "supplier": forms.Select(),
-            "num_document": forms.TextInput(),
-            "issue_date": forms.DateInput(attrs={"type": "date"}, format='%Y-%m-%d'),
-            "subtotal": forms.NumberInput(),
-            "iva": forms.NumberInput(),
-            "total": forms.NumberInput(),
+            "supplier": forms.Select(attrs={'class': 'form-control'}),
+            "num_document": forms.TextInput(attrs={'class': 'form-control'}),
+            "issue_date": forms.DateInput(attrs={"type": "date", 'class': 'form-control'}, format='%Y-%m-%d'),
+            "subtotal": forms.NumberInput(attrs={'readonly': True, 'class': 'form-control'}),
+            "iva": forms.NumberInput(attrs={'readonly': True, 'class': 'form-control'}),
+            "total": forms.NumberInput(attrs={'readonly': True, 'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):

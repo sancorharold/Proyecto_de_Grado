@@ -1,4 +1,6 @@
+import json
 from django.contrib.auth.mixins import LoginRequiredMixin
+from core.utils import custom_serializer
 from core.mixins import TitleContextMixin
 from django.views.generic import ListView, CreateView, UpdateView, DetailView, View
 from django.urls import reverse_lazy
@@ -46,6 +48,11 @@ class PurchaseCreateView(LoginRequiredMixin, TitleContextMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["products"] = Product.active_products.all()
+        # Pasamos las URLs y un array vacío para los detalles, ya que es una creación
+        context["save_url"] = self.success_url
+        context["detail_purchase"] = "[]" 
+        # Aseguramos que el nombre de la variable sea consistente con la de edición
+        context["purchase_list_url"] = reverse_lazy("purchase:purchase_list")
         return context
 
     def form_valid(self, form):
@@ -56,28 +63,23 @@ class PurchaseCreateView(LoginRequiredMixin, TitleContextMixin, CreateView):
                 purchase.save()
 
                 detail_data = json.loads(self.request.POST.get("detail", "[]"))
-
                 for item in detail_data:
                     product = Product.objects.get(pk=item["id"])
-
                     PurchaseDetail.objects.create(
                         purchase=purchase,
                         product=product,
-                        quantity=item["quantify"],
-                        cost=item["price"],
-                        subtotal=item["sub"],
-                        iva=item["iva"]
+                        quantity=item["quantity"],
+                        cost=item["cost"],
+                        subtotal=item["subtotal"],
+                        iva=Decimal(item["subtotal"]) - (Decimal(item["cost"]) * Decimal(item["quantity"])),
                     )
-
-                    # Aumentar stock
-                    product.stock += Decimal(item["quantify"])
+                    # Actualizar stock y costo del producto
+                    product.stock += Decimal(item["quantity"])
+                    product.cost = Decimal(item["cost"])
                     product.save()
-
-                return JsonResponse({"msg": "Compra registrada con éxito.", "url": self.success_url})
-
+                return JsonResponse({"msg": "Compra guardada con éxito.", "url": self.success_url})
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
-
 
 # ===================== EDITAR COMPRA =====================
 class PurchaseUpdateView(LoginRequiredMixin, TitleContextMixin, UpdateView):
@@ -86,54 +88,52 @@ class PurchaseUpdateView(LoginRequiredMixin, TitleContextMixin, UpdateView):
     template_name = "purchase/form.html"
     success_url = reverse_lazy("purchase:purchase_list")
     title2 = "Editar Compra"
-
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["products"] = Product.active_products.all()
-
         details = PurchaseDetail.objects.filter(purchase=self.object)
 
         context["detail_purchase"] = json.dumps([
             {
                 "product": d.product.id,
                 "product__description": d.product.description,
-                "quantity": float(d.quantity),
-                "price": float(d.cost),
-                "subtotal": float(d.subtotal),
-                "iva": float(d.iva),
+                "quantity": d.quantity,
+                "cost": d.cost,
+                "subtotal": d.subtotal,
+                "product__iva": d.product.iva,
             }
-            for d in details
-        ])
-
+            for d in details], default=custom_serializer)
+        
+        context["save_url"] = self.object.get_absolute_url() if hasattr(self.object, 'get_absolute_url') else reverse_lazy('purchase:purchase_update', kwargs={'pk': self.object.pk})
+        context["purchase_list_url"] = self.success_url
         return context
 
     def form_valid(self, form):
         try:
             with transaction.atomic():
                 purchase = form.save()
-
-                # Devolver stock anterior
-                old_details = PurchaseDetail.objects.filter(purchase=purchase)
-                for d in old_details:
+                
+                # Revertir stock de detalles antiguos antes de borrarlos
+                for d in purchase.detail.all():
                     d.product.stock -= d.quantity
                     d.product.save()
-                old_details.delete()
+                purchase.detail.all().delete()
 
-                # Agregar nuevos detalles
+                # Guardar los nuevos detalles y actualizar stock
                 detail_data = json.loads(self.request.POST.get("detail", "[]"))
                 for item in detail_data:
                     product = Product.objects.get(pk=item["id"])
-
                     PurchaseDetail.objects.create(
                         purchase=purchase,
                         product=product,
-                        quantity=item["quantify"],
-                        cost=item["price"],
-                        subtotal=item["sub"],
-                        iva=item["iva"],
+                        quantity=item["quantity"],
+                        cost=item["cost"],
+                        subtotal=item["subtotal"],
+                        iva=item["subtotal"] - (Decimal(item["cost"]) * Decimal(item["quantity"])),
                     )
-
-                    product.stock += Decimal(item["quantify"])
+                    product.stock += Decimal(item["quantity"])
+                    product.cost = Decimal(item["cost"])
                     product.save()
 
                 return JsonResponse({"msg": "Compra actualizada con éxito.", "url": self.success_url})
@@ -142,18 +142,24 @@ class PurchaseUpdateView(LoginRequiredMixin, TitleContextMixin, UpdateView):
 
 
 # ===================== ELIMINAR COMPRA =====================
-class PurchaseDeleteView(LoginRequiredMixin, View):
+class PurchaseDeleteView(LoginRequiredMixin, TitleContextMixin, View):
     def post(self, request, pk, *args, **kwargs):
+        # Usamos post para que la eliminación no se pueda hacer con un simple GET
         try:
-            purchase = Purchase.objects.get(pk=pk)
+            with transaction.atomic():
+                purchase = Purchase.objects.get(pk=pk)
 
-            details = PurchaseDetail.objects.filter(purchase=purchase)
-            for d in details:
-                d.product.stock -= d.quantity
-                d.product.save()
+                # Revertir el stock de cada producto en el detalle
+                for detail in purchase.detail.all():
+                    product = detail.product
+                    product.stock -= detail.quantity
+                    product.save()
 
-            details.delete()
-            purchase.delete()
+                # Eliminar la compra (y sus detalles en cascada si se configura)
+                purchase.delete()
+
+                # Usar messages para notificar en la siguiente página
+                messages.success(request, f"Compra N° {pk} eliminada y stock revertido.")
 
             return JsonResponse({"msg": "Compra eliminada correctamente."})
 
@@ -162,7 +168,7 @@ class PurchaseDeleteView(LoginRequiredMixin, View):
 
 
 # ===================== ANULAR COMPRA =====================
-class PurchaseAnnulView(LoginRequiredMixin, View):
+class PurchaseAnnulView(LoginRequiredMixin, TitleContextMixin, View):
     def post(self, request, pk, *args, **kwargs):
         try:
             purchase = Purchase.objects.get(pk=pk)
@@ -185,7 +191,7 @@ class PurchaseAnnulView(LoginRequiredMixin, View):
 
 
 # ===================== DETALLE =====================
-class PurchaseDetailView(LoginRequiredMixin, DetailView):
+class PurchaseDetailView(LoginRequiredMixin, TitleContextMixin, DetailView):
     model = Purchase
     template_name = "purchase/detail_modal.html"
 
@@ -202,7 +208,7 @@ class PurchaseDetailView(LoginRequiredMixin, DetailView):
 
 
 # ===================== IMPRIMIR =====================
-class PurchasePrintView(LoginRequiredMixin, View):
+class PurchasePrintView(LoginRequiredMixin, TitleContextMixin, View):
     def get(self, request, pk, *args, **kwargs):
         purchase = Purchase.objects.get(pk=pk)
         pdf = render_to_pdf("purchase/print.html", {"purchase": purchase})
