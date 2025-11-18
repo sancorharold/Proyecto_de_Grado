@@ -21,7 +21,7 @@ class PurchaseManager {
 
         this.costInput = this.d.getElementById("cost");
         this.ivaProdInput = this.d.getElementById("ivaProd");
-        this.quantifyInput = this.d.getElementById("quantity");
+        this.quantifyInput = this.d.getElementById("quantify");
 
         // Evitar errores si algo no existe
         if (!this.$product || !this.costInput || !this.ivaProdInput) {
@@ -80,7 +80,7 @@ class PurchaseManager {
         const description = selected.text;
         const price = parseFloat(selected.dataset.cost);
         const ivaPercent = parseFloat(selected.dataset.iva);
-        let inputQuantity = document.getElementById("quantity");
+        let inputQuantity = document.getElementById("quantify");
         const quantity = parseFloat(inputQuantity.value || 1);
         
         if (quantity <= 0) return alert("La cantidad debe ser mayor a 0");
