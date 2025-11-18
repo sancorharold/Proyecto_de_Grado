@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
-{% block content %}
 {% load static %}
+{% block content %}
 
 <div class="container mt-4">
     <h2 class="mb-4">{{ title2|default:"Nueva Compra" }}</h2>
@@ -72,7 +72,9 @@
                         <select id="product" class="form-select">
                             <option value="">-- Seleccione un producto --</option>
                             {% for p in products %}
-                            <option value="{{ p.id }}" data-description="{{ p.description }}" data-cost="{{ p.cost }}"
+                            <option value="{{ p.id }}"
+                                data-description="{{ p.description }}"
+                                data-cost="{{ p.cost }}"
                                 data-iva="{{ p.iva }}">
                                 {{ p.description }}
                             </option>
@@ -82,7 +84,7 @@
 
                     <div class="col-md-2">
                         <label class="form-label">Costo</label>
-                        <input type="number" id="cost" class="form-control" step="0.01" min="0">
+                        <input type="text" id="cost" class="form-control" readonly>
                     </div>
 
                     <div class="col-md-2">
@@ -115,8 +117,7 @@
                             <th>Acción</th>
                         </tr>
                     </thead>
-                    <tbody id="detalle">
-                    </tbody>
+                    <tbody id="detalle"></tbody>
                 </table>
 
             </div>
@@ -133,21 +134,24 @@
     </form>
 </div>
 
+<!-- ===================== SCRIPT SEGURO PARA JSON ===================== -->
 <script>
-    var save_url = "{{ save_url }}";
-    var purchase_list_url = "{{ purchase_list_url }}";
-    var detail_purchases = JSON.parse("{{ detail_purchase|escapejs }}");
+    
+    const save_url = "{{ save_url }}";
+    const purchase_list_url = "{{ purchase_list_url }}";
+
+    let detail_purchase = [];
+
+    {% if detail_purchase %}
+    try {
+        detail_purchase = JSON.parse(`{{ detail_purchase|escapejs }}`);
+    } catch (e) {
+        detail_purchase = [];
+    }
+    {% endif %}
 </script>
 
-<script src="{% static 'js/purchase/purchase.js' %}"></script>
-<<<<<<< HEAD
-<<<<<<< HEAD
-{% endblock %}
-=======
+<script src="{% static 'js/purchase/purchase.js' %}" defer></script>
+
 
 {% endblock %}
->>>>>>> parent of 5750290 (ota vez ota vez)
-=======
-
-{% endblock %}
->>>>>>> parent of 5750290 (ota vez ota vez)
