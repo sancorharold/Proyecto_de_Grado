@@ -3,6 +3,7 @@ class TitleContextMixin:
     Mixin genérico para añadir títulos a las vistas.
     Puede usarse en cualquier vista basada en clases.
     """
+
     title1 = None
     title2 = None
 

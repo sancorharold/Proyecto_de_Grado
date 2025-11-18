@@ -26,10 +26,10 @@
             {{ form.payment_method }}
           </div>
 
-          <div class="col-md-6 col-lg-4">
-            <label class="form-label fw-semibold">Fecha de Emisión</label>
-            {{ form.issue_date }}
-          </div>
+      <div class="col-md-6 col-lg-4">
+        <label class="form-label fw-semibold">Fecha de Emisión</label>
+        {{ form.issue_date }}
+      </div>
         </div>
 
         <!-- Segunda fila: Totales -->
@@ -146,3 +146,31 @@
 </script>
 <script src="{% static 'js/invoices/sales.js' %}"></script>
 {% endblock content %}
+{% block scripts %}
+<script>
+  $(document).ready(function () {
+    $('.select2').select2({
+      placeholder: "Busque un cliente por nombre o DNI",
+      allowClear: true,
+      ajax: {
+        url: function () {
+          return $(this).data('url');
+        },
+        dataType: 'json',
+        delay: 250,
+        data: function (params) {
+          return {
+            term: params.term // término de búsqueda
+          };
+        },
+        processResults: function (data) {
+          return {
+            results: data.results
+          };
+        },
+        cache: true
+      }
+    });
+  });
+</script>
+{% endblock scripts %}

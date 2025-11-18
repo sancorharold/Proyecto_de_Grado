@@ -7,13 +7,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0006_remove_brand_user_remove_category_user_and_more'),
+        ("core", "0006_remove_brand_user_remove_category_user_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='brand',
-            name='supplier',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='brands', to='core.supplier', verbose_name='Proveedor'),
+            model_name="brand",
+            name="supplier",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="brands",
+                to="core.supplier",
+                verbose_name="Proveedor",
+            ),
         ),
     ]

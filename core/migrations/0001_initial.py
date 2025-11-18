@@ -15,21 +15,35 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Supplier',
+            name="Supplier",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100)),
-                ('ruc', models.CharField(max_length=13)),
-                ('address', models.CharField(max_length=200)),
-                ('phone', models.CharField(max_length=20)),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('updated', models.DateTimeField(auto_now=True)),
-                ('state', models.BooleanField(default=True, verbose_name='Activo')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                ("ruc", models.CharField(max_length=13)),
+                ("address", models.CharField(max_length=200)),
+                ("phone", models.CharField(max_length=20)),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("updated", models.DateTimeField(auto_now=True)),
+                ("state", models.BooleanField(default=True, verbose_name="Activo")),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Proveedor',
-                'verbose_name_plural': 'Proveedores',
+                "verbose_name": "Proveedor",
+                "verbose_name_plural": "Proveedores",
             },
         ),
     ]
