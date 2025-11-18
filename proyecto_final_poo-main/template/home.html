@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<!-- ICONOS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<style>
+    /* Fondo general */
+    .dashboard-bg {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 40px 20px;
+        border-radius: 20px;
+    }
+
+    /* Cartillas */
+    .dashboard-card {
+        min-height: 220px;
+        border-radius: 22px;
+        padding: 25px;
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(6px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        transition: all .25s ease-in-out;
+    }
+    .dashboard-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+    }
+
+    .dashboard-icon {
+        font-size: 48px;
+        margin-bottom: 10px;
+        opacity: 0.85;
+    }
+
+    /* Colores individuales */
+    .card-proveedores .dashboard-icon { color: #0d6efd; }
+    .card-productos .dashboard-icon { color: #198754; }
+    .card-ventas .dashboard-icon     { color: #dc3545; }
+
+    .dashboard-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+
+</style>
+
+
+<div class="container dashboard-bg">
+
+    <h1 class="text-center mb-4 fw-bold">{{ title2 }}</h1>
+
+    <div class="row g-4 justify-content-center">
+
+        <!-- CARD PROVEEDORES -->
+        <div class="col-md-4 col-sm-6">
+            <div class="dashboard-card text-center card-proveedores">
+                <i class="bi bi-truck dashboard-icon"></i>
+                <h4 class="fw-semibold">Proveedores</h4>
+                <p class="dashboard-number text-primary">{{ suppliers }}</p>
+                <a href="{% url 'core:supplier_list' %}" class="btn btn-primary rounded-pill px-4">
+                    Ver lista
+                </a>
+            </div>
+        </div>
+
+        <!-- CARD PRODUCTOS -->
+        <div class="col-md-4 col-sm-6">
+            <div class="dashboard-card text-center card-productos">
+                <i class="bi bi-box-seam dashboard-icon"></i>
+                <h4 class="fw-semibold">Productos</h4>
+                <p class="dashboard-number text-success">{{ products }}</p>
+                <a href="#" class="btn btn-success rounded-pill px-4">
+                    Ver productos
+                </a>
+            </div>
+        </div>
+
+        <!-- CARD VENTAS -->
+        <div class="col-md-4 col-sm-6">
+            <div class="dashboard-card text-center card-ventas">
+                <i class="bi bi-cash-coin dashboard-icon"></i>
+                <h4 class="fw-semibold">Ventas</h4>
+                <p class="dashboard-number text-danger">{{ invoices }}</p>
+                <a href="{% url 'commerce:invoice_list' %}" class="btn btn-danger rounded-pill px-4">
+                    Ver ventas
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock content %}

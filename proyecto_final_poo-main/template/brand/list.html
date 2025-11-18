@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2">{{ title2|upper }}</h1>
+    <a class="btn btn-success" href="{% url 'core:brand_create' %}">➕ Nueva Marca</a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">Descripción</th>
+            <th scope="col">Proveedor</th>
+            <th scope="col" class="text-center">Estado</th>
+            <th scope="col" class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for brand in brands %}
+          <tr>
+            <td>{{ brand.description }}</td>
+            <td>{{ brand.supplier.name }}</td>
+            <td class="text-center">
+              {% if brand.state %}
+                <span class="badge bg-success">Activo</span>
+              {% else %}
+                <span class="badge bg-danger">Inactivo</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <a href="{% url 'core:brand_update' brand.id %}" class="btn btn-sm btn-warning" title="Editar">✏️</a>
+              <a href="{% url 'core:brand_delete' brand.id %}" class="btn btn-sm btn-danger" title="Eliminar">🗑️</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="text-center py-4">No hay marcas registradas.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock content %}
