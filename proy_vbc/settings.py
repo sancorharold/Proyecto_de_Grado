@@ -80,7 +80,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "postgres",
         "USER": "postgres",
-        "PASSWORD": "2004",
+        "PASSWORD": "12345",
         "HOST": "localhost",
         "PORT": "5432",
     }
@@ -117,7 +117,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-LOGIN_URL = "/"
+LOGIN_URL = "core:login"
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/

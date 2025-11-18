@@ -6,6 +6,7 @@ from django.views.generic import (
     DeleteView,
     TemplateView,
 )
+from django.contrib.auth.views import LoginView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from core.mixins import TitleContextMixin
 from core.forms import SupplierForm, BrandForm
@@ -32,7 +33,16 @@ def home(request):
     return render(request, "home.html", data)
 
 
-class HomeTemplateView(TitleContextMixin, TemplateView):
+class CustomLoginView(TitleContextMixin, LoginView):
+    template_name = "login.html"
+    title2 = "Iniciar Sesión"
+
+    def get_success_url(self):
+        # Redirige a la página principal después de un login exitoso
+        return reverse_lazy("core:home")
+
+
+class HomeTemplateView(LoginRequiredMixin, TitleContextMixin, TemplateView):
 
     template_name = "home.html"
 

@@ -1,10 +1,13 @@
 from django.urls import path
 from core import views
+from django.contrib.auth.views import LogoutView
 
 app_name = "core"  # define un espacio de nombre para la aplicacion
 urlpatterns = [
     # path('', views.home,name='home'),
     path("", views.HomeTemplateView.as_view(), name="home"),
+    path("login/", views.CustomLoginView.as_view(), name="login"),
+    path("logout/", LogoutView.as_view(next_page="core:login"), name="logout"),
     path("supplier_list/", views.SupplierListView.as_view(), name="supplier_list"),
     path(
         "supplier_create/", views.SupplierCreateView.as_view(), name="supplier_create"
