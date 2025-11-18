@@ -74,7 +74,7 @@
 
                     <div class="col-md-2">
                         <label class="form-label">Costo</label>
-                        <input type="number" id="cost" class="form-control" step="0.01" min="0">
+                        <input type="text" id="cost" class="form-control" readonly>
                     </div>
 
                     <div class="col-md-2">
@@ -84,7 +84,7 @@
 
                     <div class="col-md-2">
                         <label class="form-label">Cantidad</label>
-                        <input type="number" id="quantity" class="form-control" min="1" value="1">
+                        <input type="number" id="quantify" class="form-control" min="1" value="1">
                     </div>
 
                     <div class="col-md-2">
@@ -126,7 +126,7 @@
 <script>
     var save_url = "{{ save_url }}";
     var purchase_list_url = "{{ purchase_list_url }}";
-    var detail_purchases = JSON.parse("{{ detail_purchase|escapejs }}");
+    var detail_purchase = JSON.parse("{{ detail_purchase|escapejs }}");
 </script>
 
 <script src="{% static 'js/purchase/purchase.js' %}"></script>
