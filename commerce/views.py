@@ -272,3 +272,6 @@ class InvoicePrintView(LoginRequiredMixin, View):
             pdf["Content-Disposition"] = f'attachment; filename="{filename}"'
             return pdf
         return HttpResponse("Error al generar el PDF.", status=500)
+
+
+
