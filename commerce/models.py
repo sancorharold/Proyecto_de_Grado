@@ -54,7 +54,7 @@ class Invoice(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.id} - {self.customer}"
+        return f"{self.PK} - {self.customer}"
 
 
 class InvoiceDetail(models.Model):
