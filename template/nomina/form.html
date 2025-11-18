@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% block content %}
+{% load static %}
+<div class="container mt-4">
+    <h2 class="mb-4">{{ title2|default:"Nuevo Préstamo" }}</h2>
+
+    <form method="post" novalidate id="frmPrestamo">
+        {% csrf_token %}
+
+        <input type="hidden" name="interes" id="id_interes_hidden" value="{{ object.interes|default:'0.00' }}">
+        <input type="hidden" name="monto_pagar" id="id_monto_pagar_hidden" value="{{ object.monto_pagar|default:'0.00' }}">
+        <input type="hidden" name="saldo" id="id_saldo_hidden" value="{{ object.saldo|default:'0.00' }}">
+
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Datos del Préstamo</h5>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6 col-lg-4">
+                        <label class="form-label fw-semibold">Empleado Beneficiario</label>
+                        {{ form.empleado }}
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <label class="form-label fw-semibold">Tipo de Préstamo</label>
+                        {{ form.tipo_prestamo }}
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <label class="form-label fw-semibold">Fecha de Préstamo</label>
+                        {{ form.fecha_prestamo }}
+                    </div>
+                </div>
+                
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6 col-lg-4">
+                        <label class="form-label fw-semibold">Monto Solicitado</label>
+                        {{ form.monto }}
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <label class="form-label fw-semibold">Número de Cuotas</label>
+                        {{ form.numero_cuotas }}
+                    </div>
+                </div>
+
+                <div class="row g-3 align-items-center mt-2">
+                    <div class="col-lg-3 col-md-6">
+                        <div class="p-3 border rounded bg-light shadow-sm text-center">
+                            <label class="form-label text-muted mb-1">Interés Total</label>
+                            <div class="h4 fw-bold text-dark mb-0" id="interes_display">
+                                ${{ object.interes|default:"0.00"|floatformat:2 }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6">
+                        <div class="p-3 border rounded bg-light shadow-sm text-center">
+                            <label class="form-label text-muted mb-1">Monto Total a Pagar</label>
+                             <div class="h4 fw-bold text-dark mb-0" id="monto_pagar_display">
+                                ${{ object.monto_pagar|default:"0.00"|floatformat:2 }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6">
+                        <div class="p-3 border rounded bg-success text-white shadow text-center">
+                            <label class="form-label text-uppercase fw-bold mb-1">Saldo</label>
+                            <div class="h3 fw-bold mb-0" id="saldo_display">
+                                ${{ object.saldo|default:"0.00"|floatformat:2 }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Plan de Pagos (Cuotas)</h5>
+                <button type="button" id="btnGenerateCuotas" class="btn btn-warning btn-sm">
+                    ⚙️ Generar Cuotas
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mt-4">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 10%;">N° Cuota</th>
+                                <th style="width: 30%;">Fecha Vencimiento</th>
+                                <th style="width: 30%;">Valor Cuota</th>
+                                <th style="width: 30%;">Saldo Cuota</th>
+                                <th style="width: 10%;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detalle_cuotas">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-end mt-3 pt-3 border-top">
+            <button type="submit" class="btn btn-success fw-semibold me-2">
+                💾 Guardar Préstamo
+            </button>
+            <a href="{% url 'nomina:prestamo_list' %}" class="btn btn-danger fw-semibold">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+{% block scripts %}
+<script>
+    $(document).ready(function () {
+        $('.select2').select2();
+    });
+</script>
+
+<script src="{% static 'js/nomina/loan_manager.js' %}"></script>
+
+<script>
+    // Parámetros que necesita el loan_manager.js
+    const LOAN_MANAGER_PARAMS = {
+        saveUrl: "{% if object %}{% url 'nomina:prestamo_update' object.id %}{% else %}{% url 'nomina:prestamo_create' %}{% endif %}",
+        listUrl: "{% url 'nomina:prestamo_list' %}",
+        // Datos de edición: detalle_prestamo viene del get_context_data de la vista UpdateView
+        initialDetail: JSON.parse('{{ detail_prestamo|default:"[]"|escapejs }}'),
+        formSelector: "#frmPrestamo",
+        detailTableSelector: "#detalle_cuotas",
+    };
+    
+    // Inicialización del gestor de préstamos
+    document.addEventListener('DOMContentLoaded', () => {
+        // Inicializa la clase LoanManager con los parámetros
+        const loanManager = new LoanManager(LOAN_MANAGER_PARAMS);
+
+        // Lógica de generación de cuotas
+        document.getElementById('btnGenerateCuotas').addEventListener('click', () => {
+            loanManager.generateCuotas();
+        });
+
+        // Lógica de envío del formulario (AJAX)
+        document.getElementById('frmPrestamo').addEventListener('submit', function(e) {
+            e.preventDefault();
+            // Llama al método de guardado en el manager, que incluye la serialización del detalle.
+            loanManager.savePrestamo();
+        });
+        
+        // Si hay detalles iniciales (edición), renderizarlos al cargar la página
+        if (LOAN_MANAGER_PARAMS.initialDetail.length > 0) {
+            loanManager.detailCuotas = LOAN_MANAGER_PARAMS.initialDetail;
+            loanManager.renderDetail();
+        }
+    });
+</script>
+{% endblock scripts %}
+{% endblock content %}

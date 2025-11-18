@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<!-- ICONOS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
 <style>
@@ -37,6 +36,8 @@
     .card-proveedores .dashboard-icon { color: #0d6efd; }
     .card-productos .dashboard-icon { color: #198754; }
     .card-ventas .dashboard-icon     { color: #dc3545; }
+    /* === COLOR AÑADIDO === */
+    .card-prestamos .dashboard-icon { color: #ffc107; } 
 
     .dashboard-number {
         font-size: 2.5rem;
@@ -52,7 +53,6 @@
 
     <div class="row g-4 justify-content-center">
 
-        <!-- CARD PROVEEDORES -->
         <div class="col-md-4 col-sm-6">
             <div class="dashboard-card text-center card-proveedores">
                 <i class="bi bi-truck dashboard-icon"></i>
@@ -64,7 +64,6 @@
             </div>
         </div>
 
-        <!-- CARD PRODUCTOS -->
         <div class="col-md-4 col-sm-6">
             <div class="dashboard-card text-center card-productos">
                 <i class="bi bi-box-seam dashboard-icon"></i>
@@ -75,8 +74,7 @@
                 </a>
             </div>
         </div>
-
-        <!-- CARD VENTAS -->
+        
         <div class="col-md-4 col-sm-6">
             <div class="dashboard-card text-center card-ventas">
                 <i class="bi bi-cash-coin dashboard-icon"></i>
@@ -88,7 +86,17 @@
             </div>
         </div>
 
-    </div>
+        <div class="col-md-4 col-sm-6">
+            <div class="dashboard-card text-center card-prestamos">
+                <i class="bi bi-wallet-fill dashboard-icon" style="color: #ffc107;"></i>
+                <h4 class="fw-semibold">Préstamos</h4>
+                <p class="dashboard-number text-warning">{{ loans|default:0 }}</p> 
+                <a href="{% url 'nomina:prestamo_list' %}" class="btn btn-warning rounded-pill px-4">
+                    Gestión Nomina
+                </a>
+            </div>
+        </div>
+        </div>
 </div>
 
 {% endblock content %}

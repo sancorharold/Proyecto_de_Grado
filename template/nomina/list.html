@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="table-container">
+    <br>
+    <h1 class="title">{{ title2|upper }}</h1>
+
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+    <form method="get">
+        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Buscar por empleado o ID">
+        <button type="submit">Buscar</button>
+    </form>
+
+    <table class="styled-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Empleado</th>
+                <th>Tipo</th>
+                <th>Fecha</th>
+                <th>Monto Solicitado</th>
+                <th>Cuotas</th>
+                <th>Saldo Pendiente</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for item in prestamos %}
+            <tr id="prestamo-row-{{ item.id }}">
+                <td>{{ item.id }}</td>
+                <td>{{ item.empleado }}</td>
+                <td>{{ item.tipo_prestamo }}</td>
+                <td>{{ item.fecha_prestamo|date:"d/m/Y" }}</td>
+                <td>${{ item.monto|floatformat:2 }}</td>
+                <td>{{ item.numero_cuotas }}</td>
+                <td><strong>${{ item.saldo|floatformat:2 }}</strong></td>
+                <td class="text-center">
+                    {% if item.estado == 'PEND' %}
+                    <span class="badge bg-warning">Pendiente</span>
+                    {% elif item.estado == 'PAG' %}
+                    <span class="badge bg-success">Pagado</span>
+                    {% else %}
+                    <span class="badge bg-danger">Anulado</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-primary view-detail" data-id="{{ item.id }}">🔎 Ver</button>
+                    
+                    <a href="{% url 'nomina:prestamo_print' item.id %}" target="_blank" class="btn btn-sm btn-info"
+                        title="Imprimir">🖨️</a>
+                    
+                    {% if item.estado == 'PEND' %}
+                    <a href="{% url 'nomina:prestamo_update' item.id %}" class="btn btn-sm btn-warning" title="Editar">✏️</a>
+                    
+                    <button type="button" class="btn btn-sm btn-secondary btn-annul" data-id="{{ item.id }}">🚫 Anular</button>
+                    
+                    <button type="button" class="btn btn-sm btn-danger btn-delete" data-id="{{ item.id }}">🗑️ Eliminar</button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" style="text-align:center;">No hay préstamos registrados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="form-group mt-3">
+        <a class="btn blue" href="{% url 'nomina:prestamo_create' %}">➕ Nuevo Préstamo</a>
+    </div>
+</div>
+
+<div class="modal fade" id="prestamoModal" tabindex="-1" aria-labelledby="prestamoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content" id="modalContent"></div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = new bootstrap.Modal(document.getElementById('prestamoModal'));
+        const modalContent = document.getElementById('modalContent');
+
+        // CSRF token desde el input oculto
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        // URLs base ajustadas al namespace 'nomina'
+        const baseDetailUrl = "{% url 'nomina:prestamo_detail' 0 %}".replace('0/', ''); 
+        const deleteUrlBase = "{% url 'nomina:prestamo_delete' 0 %}".replace('0', ''); 
+        const annulUrlBase = "{% url 'nomina:prestamo_annul' 0 %}".replace('0', '');
+
+        // Ver detalle
+        document.querySelectorAll('.view-detail').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                fetch(`${baseDetailUrl}${id}/`)
+                 .then(res => res.json())
+                 .then(data => {
+                    modalContent.innerHTML = data.html;
+                    modal.show();
+                 })
+                 .catch(() => alert('No se pudo cargar el detalle del préstamo.'));
+            });
+        });
+
+        // Eliminar Préstamo (POST)
+        document.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                if (!confirm(`¿Seguro que desea eliminar el préstamo N° ${id}?`)) return;
+
+                const url = `${deleteUrlBase}${id}/`;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                 .then(res => {
+                     if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
+                     return res.json();
+                 })
+                 .then(data => {
+                     if (data.msg) {
+                         alert(data.msg);
+                         document.getElementById(`prestamo-row-${id}`).remove();
+                     } else if (data.error) {
+                         alert(data.error);
+                     }
+                 })
+                 .catch(err => {
+                     console.error("Error al eliminar el préstamo:", err);
+                     alert('Error al eliminar el préstamo.');
+                 });
+            });
+        });
+
+        // Anular Préstamo (POST)
+        document.querySelectorAll('.btn-annul').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                if (!confirm(`¿Seguro que desea anular el préstamo N° ${id}? Esto no puede deshacerse fácilmente.`)) return;
+
+                const url = `${annulUrlBase}${id}/`;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                 .then(res => res.json())
+                 .then(data => {
+                     if (data.msg) location.reload();
+                     else if (data.error) alert(data.error);
+                 })
+                 .catch(() => alert('Error al anular el préstamo.'));
+            });
+        });
+    });
+</script>
+{% endblock content %}
