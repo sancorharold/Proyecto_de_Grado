@@ -3,7 +3,7 @@ from core.mixins import TitleContextMixin
 from core.models import Product
 from core.utils import custom_serializer
 from .forms import InvoiceForm
-from .models import Invoice, InvoiceDetail
+from .models import Invoice, InvoiceDetail, Purchase, PurchaseDetail
 from django.db.models import Q
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView, DetailView, View
@@ -272,6 +272,5 @@ class InvoicePrintView(LoginRequiredMixin, View):
             pdf["Content-Disposition"] = f'attachment; filename="{filename}"'
             return pdf
         return HttpResponse("Error al generar el PDF.", status=500)
-
 
 
