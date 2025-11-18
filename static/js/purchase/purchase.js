@@ -6,7 +6,7 @@ class PurchaseManager {
         this.d = document;
         this.detailPurchase = [];
 
-        // --- Referencias DOM ---
+        // --- DOM ---
         this.$supplier = this.d.getElementById("id_supplier");
         this.$numDocument = this.d.getElementById("id_num_document");
         this.$issueDate = this.d.getElementById("id_issue_date");
@@ -21,13 +21,18 @@ class PurchaseManager {
 
         this.costInput = this.d.getElementById("cost");
         this.ivaProdInput = this.d.getElementById("ivaProd");
-        this.quantifyInput = this.d.getElementById("quantify");
+        this.quantifyInput = this.d.getElementById("quantity");
 
-        // --- Eventos ---
+        // Evitar errores si algo no existe
+        if (!this.$product || !this.costInput || !this.ivaProdInput) {
+            console.error("Error: Faltan elementos del formulario en el HTML.");
+            return;
+        }
+
         this.initEvents();
 
-        // --- Si hay detalles previos cargados ---
-        if (typeof detail_purchase !== 'undefined' && detail_purchase.length > 0) {
+        // --- Si hay detalles previos (modo editar) ---
+        if (typeof detail_purchase !== "undefined" && Array.isArray(detail_purchase)) {
             this.detailPurchase = detail_purchase.map(item => ({
                 product: item.product,
                 description: item.product__description,
@@ -42,43 +47,50 @@ class PurchaseManager {
     }
 
     initEvents() {
-        this.$product.addEventListener('change', e => this.onProductChange(e));
-        this.$btnAdd.addEventListener('click', () => this.addProduct());
-        this.$detailBody.addEventListener('click', e => this.removeProduct(e));
-        this.$form.addEventListener('submit', e => this.submitForm(e));
+        this.$product.addEventListener("change", e => this.onProductChange(e));
+        this.$btnAdd.addEventListener("click", () => this.addProduct());
+        this.$detailBody.addEventListener("click", e => this.removeProduct(e));
+        this.$form.addEventListener("submit", e => this.submitForm(e));
 
-        // Inicializa inputs al cargar
-        this.onProductChange({ target: this.$product });
+        // Solo actualizar si hay un producto seleccionado
+        if (this.$product.selectedIndex > 0) {
+            this.onProductChange({ target: this.$product });
+        }
     }
 
-    // Cargar costo e IVA del producto seleccionado
+    // --- Cambiar costo e IVA al seleccionar un producto ---
     onProductChange(e) {
-        const option = e.target.selectedOptions[0];
-        if (!option) return;
+        const option = e.target.selectedOptions ? e.target.selectedOptions[0] : null;
+        if (!option) {
+            this.costInput.value = "";
+            this.ivaProdInput.value = "";
+            return;
+        }
+
         this.costInput.value = parseFloat(option.dataset.cost || 0).toFixed(2);
         this.ivaProdInput.value = parseFloat(option.dataset.iva || 0).toFixed(2);
     }
 
+    // --- Agregar producto ---
     addProduct() {
         const selected = this.$product.options[this.$product.selectedIndex];
-        if (!selected.value) return alert("Seleccione un producto");
+        if (!selected.value) return alert("Seleccione un producto.");
 
         const id = parseInt(selected.value);
         const description = selected.text;
         const price = parseFloat(selected.dataset.cost);
         const ivaPercent = parseFloat(selected.dataset.iva);
-        const quantity = parseFloat(this.quantifyInput.value);
-
+        let inputQuantity = document.getElementById("quantity");
+        const quantity = parseFloat(inputQuantity.value || 1);
+        
         if (quantity <= 0) return alert("La cantidad debe ser mayor a 0");
 
-        // Calcular IVA y subtotal
         const ivaValue = price * quantity * (ivaPercent / 100);
         const sub = price * quantity + ivaValue;
 
-        // Verificar si ya existe el producto
+        // Si existe, actualizar
         const existing = this.detailPurchase.find(p => p.product === id);
         if (existing) {
-            // Actualizamos cantidad, IVA y subtotal
             existing.quantity += quantity;
             existing.iva += ivaValue;
             existing.sub += sub;
@@ -97,6 +109,7 @@ class PurchaseManager {
         this.updateTotals();
     }
 
+    // --- Dibujar tabla ---
     renderDetail() {
         this.$detailBody.innerHTML = this.detailPurchase.map(p => `
             <tr>
@@ -115,15 +128,19 @@ class PurchaseManager {
         `).join('');
     }
 
+    // --- Eliminar producto ---
     removeProduct(e) {
-        const btn = e.target.closest('button[rel=rel-delete]');
+        const btn = e.target.closest("button[rel=rel-delete]");
         if (!btn) return;
+
         const id = parseInt(btn.dataset.id);
         this.detailPurchase = this.detailPurchase.filter(p => p.product !== id);
+
         this.renderDetail();
         this.updateTotals();
     }
 
+    // --- Calcular totales ---
     updateTotals() {
         const totals = this.detailPurchase.reduce((acc, p) => {
             acc.iva += p.iva;
@@ -136,6 +153,7 @@ class PurchaseManager {
         this.totalInput.value = totals.sub.toFixed(2);
     }
 
+    // --- Guardar ---
     async submitForm(e) {
         e.preventDefault();
         if (this.detailPurchase.length === 0) return alert("Agregue al menos un producto");
@@ -144,17 +162,14 @@ class PurchaseManager {
     }
 
     async savePurchase(urlPost, urlSuccess) {
-        // Convertir todos los números a string decimal
         const detail = this.detailPurchase.map(p => ({
-            id: p.product,             // clave que Django espera
+            id: p.product,
             description: p.description,
             price: p.price.toFixed(2),
-            quantify: p.quantity.toFixed(2),  // cambio aquí
+            quantify: p.quantity,
             iva: p.iva.toFixed(2),
             sub: p.sub.toFixed(2)
         }));
-
-
 
         const formData = new FormData(this.$form);
         formData.append("detail", JSON.stringify(detail));
@@ -163,26 +178,25 @@ class PurchaseManager {
 
         try {
             const res = await fetch(urlPost, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': csrf
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": csrf
                 },
                 body: formData
             });
 
-            if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const result = await res.json();
 
-            if (result.error) {
-                alert(result.error);
-            } else {
+            if (result.error) alert(result.error);
+            else {
                 alert(result.msg);
                 window.location.href = urlSuccess;
             }
         } catch (err) {
-            console.error("Error en guardado:", err);
-            alert("Error al guardar la compra");
+            console.error("Error al guardar:", err);
+            alert("Error al guardar la compra.");
         }
     }
 }
