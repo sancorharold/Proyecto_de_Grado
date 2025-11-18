@@ -163,6 +163,7 @@ class SaleManager {
     } catch (err) {
       console.error("Error en guardado:", err);
       alert("Error al grabar la venta.");
+      alert(result)
     }
   }
 }

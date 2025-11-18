@@ -4,7 +4,6 @@ from . import views
 app_name = "commerce"
 
 
-
 urlpatterns = [
     # URLs para Facturas (Invoices)
     path("invoice/list/", views.InvoiceListView.as_view(), name="invoice_list"),
@@ -29,5 +28,9 @@ urlpatterns = [
         views.InvoiceDetailView.as_view(),
         name="invoice_detail",
     ),
-    path("invoice/print/<int:pk>/", views.InvoicePrintView.as_view(), name="invoice_print"),
+    path(
+        "invoice/print/<int:pk>/",
+        views.InvoicePrintView.as_view(),
+        name="invoice_print",
+    ),
 ]

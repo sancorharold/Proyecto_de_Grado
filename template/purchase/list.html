@@ -11,7 +11,7 @@
         <form method="get" class="row g-2 mb-3">
             <div class="col-md-4">
                 <input type="text" name="q" value="{{ request.GET.q }}" class="form-control"
-                       placeholder="Buscar por proveedor o número de documento...">
+                    placeholder="Buscar por proveedor o número de documento...">
             </div>
             <div class="col-md-2">
                 <button class="btn btn-primary w-100">Buscar</button>
@@ -42,8 +42,8 @@
             </thead>
 
             <tbody>
-            {% for item in purchases %}
-                <tr>
+                {% for item in purchases %}
+                <tr id="purchase-row-{{ item.id }}">
                     <td>{{ forloop.counter }}</td>
                     <td>{{ item.supplier.name }}</td>
                     <td>{{ item.num_document|default:"S/N" }}</td>
@@ -53,49 +53,88 @@
                         <a href="{% url 'purchase:purchase_update' item.id %}" class="btn btn-warning btn-sm">
                             Editar
                         </a>
-                        <a href="{% url 'purchase:purchase_delete' item.id %}" class="btn btn-danger btn-sm">
+                        <button class="btn btn-danger btn-sm" onclick="deletePurchase({{ item.id }})">
                             Eliminar
-                        </a>
+                        </button>
                     </td>
                 </tr>
-            {% empty %}
+                {% empty %}
                 <tr>
                     <td colspan="6" class="text-center text-muted">
                         No hay compras registradas.
                     </td>
                 </tr>
-            {% endfor %}
+                {% endfor %}
             </tbody>
         </table>
 
         <!-- Paginación -->
         {% if is_paginated %}
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center">
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
 
-                    {% if page_obj.has_previous %}
-                        <li class="page-item"><a class="page-link" href="?page=1">«</a></li>
-                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a></li>
-                    {% endif %}
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page=1">«</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a></li>
+                {% endif %}
 
-                    {% for page in paginator.page_range %}
-                        {% if page == page_obj.number %}
-                            <li class="page-item active"><span class="page-link">{{ page }}</span></li>
-                        {% else %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page }}">{{ page }}</a>
-                            </li>
-                        {% endif %}
-                    {% endfor %}
+                {% for page in paginator.page_range %}
+                {% if page == page_obj.number %}
+                <li class="page-item active"><span class="page-link">{{ page }}</span></li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page }}">{{ page }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
 
-                    {% if page_obj.has_next %}
-                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a></li>
-                        <li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}">»</a></li>
-                    {% endif %}
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}">»</a></li>
+                {% endif %}
 
-                </ul>
-            </nav>
+            </ul>
+        </nav>
         {% endif %}
     </div>
 </div>
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function deletePurchase(pk) {
+        if (!confirm('¿Seguro que deseas eliminar esta compra?')) return;
+
+        fetch("{% url 'purchase:purchase_delete' 0 %}".replace('0', pk), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.msg) {
+                    alert(data.msg);
+                    document.getElementById('purchase-row-' + pk)?.remove();
+                } else if (data.error) {
+                    alert(data.error);
+                }
+            })
+            .catch(err => console.error(err));
+    }
+</script>
 {% endblock %}

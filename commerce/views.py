@@ -85,10 +85,14 @@ class InvoiceCreateView(LoginRequiredMixin, TitleContextMixin, CreateView):
                     )
                     product.reduce_stock(item["quantify"])
 
-                return JsonResponse({"msg": "Factura guardada con éxito.", "url": self.success_url})
+                return JsonResponse(
+                    {"msg": "Factura guardada con éxito.", "url": self.success_url}
+                )
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
 
+
+from django.http import JsonResponse
 
 class InvoiceUpdateView(LoginRequiredMixin, TitleContextMixin, UpdateView):
     model = Invoice
@@ -101,11 +105,32 @@ class InvoiceUpdateView(LoginRequiredMixin, TitleContextMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         context["products"] = Product.active_products.all()
         details = InvoiceDetail.objects.filter(invoice=self.object)
-        context["detail_sales"] = json.dumps([
-            {"product": d.product.id, "product__description": d.product.description, "quantity": d.quantity, "price": d.price, "subtotal": d.subtotal, "iva": d.iva}
-            for d in details
-        ])
+        context["detail_sales"] = json.dumps(
+            [
+                {
+                    "product": d.product.id,
+                    "product__description": d.product.description,
+                    "quantity": float(d.quantity),
+                    "price": float(d.price),
+                    "subtotal": float(d.subtotal),
+                    "iva": float(d.iva),
+                }
+                for d in details
+            ]
+        )
         return context
+
+    def form_valid(self, form):
+        self.object = form.save()
+        # Aquí podrías procesar el detalle enviado desde JS
+        import json
+        detail_data = json.loads(self.request.POST.get("detail", "[]"))
+        # Guardar detalle_data en InvoiceDetail...
+        # Luego devolver JSON
+        return JsonResponse({"msg": "Factura actualizada con éxito"})
+
+    def form_invalid(self, form):
+        return JsonResponse({"error": form.errors}, status=400)
 
 
 class InvoiceDeleteView(LoginRequiredMixin, View):
@@ -117,6 +142,7 @@ class InvoiceDeleteView(LoginRequiredMixin, View):
         except Invoice.DoesNotExist:
             return JsonResponse({"error": "Factura no encontrada."}, status=404)
 
+
 class InvoiceAnnulView(LoginRequiredMixin, View):
     def post(self, request, pk, *args, **kwargs):
         invoice = Invoice.objects.get(pk=pk)
@@ -124,15 +150,18 @@ class InvoiceAnnulView(LoginRequiredMixin, View):
         invoice.save()
         return JsonResponse({"msg": "Factura anulada correctamente."})
 
+
 class InvoiceDetailView(LoginRequiredMixin, DetailView):
     model = Invoice
     template_name = "invoice/detail_modal.html"
 
     def get(self, request, *args, **kwargs):
         from django.template.loader import render_to_string
+
         invoice = self.get_object()
         html = render_to_string(self.template_name, {"invoice": invoice})
         return JsonResponse({"html": html})
+
 
 class InvoicePrintView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):

@@ -4,6 +4,9 @@
   <br>
   <h1 class="title">{{ title2|upper }}</h1>
 
+  <!-- CSRF oculto para JS -->
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
   <form method="get">
     <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Buscar por cliente, fecha o método de pago">
     <button type="submit">Buscar</button>
@@ -25,7 +28,7 @@
 
     <tbody>
       {% for item in invoices %}
-      <tr>
+      <tr id="invoice-row-{{ item.id }}">
         <td>{{ item.customer.get_full_name }}</td>
         <td>{{ item.get_payment_method_display }}</td>
         <td>{{ item.issue_date|date:"d/m/Y H:i" }}</td>
@@ -40,16 +43,15 @@
           {% endif %}
         </td>
         <td class="text-center">
-          <!-- Botón que abre el modal -->
-          <button type="button" class="btn btn-sm btn-outline-primary view-detail" data-id="{{ item.id }}">
-            🔎 Ver
-          </button>
-
-          <!-- Apartado Para el boton de Impprimir -->
+          <button type="button" class="btn btn-sm btn-outline-primary view-detail" data-id="{{ item.id }}">🔎
+            Ver</button>
           <a href="{% url 'commerce:invoice_print' item.id %}" target="_blank" class="btn btn-sm btn-info"
             title="Imprimir">🖨️</a>
-
           <a href="{% url 'commerce:invoice_update' item.id %}" class="btn btn-sm btn-warning" title="Editar">✏️</a>
+          <button type="button" class="btn btn-sm btn-danger btn-delete" data-id="{{ item.id }}">🗑️ Eliminar</button>
+          {% if item.state %}
+          <button type="button" class="btn btn-sm btn-secondary btn-annul" data-id="{{ item.id }}">🚫 Anular</button>
+          {% endif %}
         </td>
       </tr>
       {% empty %}
@@ -68,72 +70,90 @@
 <!-- ================= MODAL DETALLE DE FACTURA ================= -->
 <div class="modal fade" id="invoiceModal" tabindex="-1" aria-labelledby="invoiceModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content" id="modalContent">
-      <!-- El contenido del detalle se cargará dinámicamente aquí -->
-    </div>
+    <div class="modal-content" id="modalContent"></div>
   </div>
 </div>
 
-<!-- ================= SCRIPT PRINCIPAL ================= -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const modal = new bootstrap.Modal(document.getElementById('invoiceModal'));
     const modalContent = document.getElementById('modalContent');
-    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
 
-    // URL base del detalle
-    const baseDetailUrl = "{% url 'commerce:invoice_detail' 0 %}".replace('0/', '');
-    const deleteUrlBase = "{% url 'commerce:invoice_delete' 0 %}".replace('0/', '');
-    const annulUrlBase = "{% url 'commerce:invoice_annul' 0 %}".replace('0/', '');
+    // CSRF token desde el input oculto
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-    // --- Abrir modal y cargar contenido ---
+    const baseDetailUrl = "{% url 'commerce:invoice_detail' 0 %}".replace('0', '');
+    const deleteUrlBase = "{% url 'commerce:invoice_delete' 0 %}".replace('0', '');
+    const annulUrlBase = "{% url 'commerce:invoice_annul' 0 %}".replace('0', '');
+
+    // Ver detalle
     document.querySelectorAll('.view-detail').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        const url = `${baseDetailUrl}${id}/`;
-
-        fetch(url)
+        fetch(`${baseDetailUrl}${id}/`)
           .then(res => res.json())
           .then(data => {
             modalContent.innerHTML = data.html;
             modal.show();
           })
+          .catch(() => alert('No se pudo cargar el detalle de la factura.'));
+      });
+    });
+
+    // Eliminar factura
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        if (!confirm(`¿Seguro que desea eliminar la factura N° ${id}?`)) return;
+
+        const url = `{% url 'commerce:invoice_delete' 0 %}`.replace('0', id);
+
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+          .then(res => {
+            if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
+            return res.json();
+          })
+          .then(data => {
+            if (data.msg) {
+              alert(data.msg);
+              document.getElementById(`invoice-row-${id}`).remove();
+            } else if (data.error) {
+              alert(data.error);
+            }
+          })
           .catch(err => {
-            console.error('Error al cargar el detalle:', err);
-            alert('No se pudo cargar el detalle de la factura.');
+            console.error("Error al eliminar la factura:", err);
+            alert('Error al eliminar la factura.');
           });
       });
     });
 
-    // --- Delegación de eventos para botones dinámicos ---
-    document.addEventListener('click', (e) => {
-      const btn = e.target.closest('#btnDelete, #btnAnnul');
-      if (!btn) return;
+    // Anular factura
+    document.querySelectorAll('.btn-annul').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        if (!confirm(`¿Seguro que desea anular la factura N° ${id}?`)) return;
 
-      const id = btn.dataset.id;
-      const isDelete = btn.id === 'btnDelete';
-      const action = isDelete ? 'eliminar' : 'anular';
-      const url = isDelete ? deleteUrlBase : annulUrlBase;
-
-      if (!confirm(`¿Seguro que desea ${action} la factura N° ${id}?`)) return;
-
-      fetch(`${url}${id}/`, {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': csrftoken,
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      })
-        .then(res => res.json())
-        .then(data => {
-          alert(data.msg);
-          modal.hide();
-          location.reload();
+        fetch(`${annulUrlBase}${id}/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest'
+          }
         })
-        .catch(err => {
-          console.error('Error en acción:', err);
-          alert('Ocurrió un error al procesar la solicitud.');
-        });
+          .then(res => res.json())
+          .then(data => {
+            if (data.msg) location.reload();
+            else if (data.error) alert(data.error);
+          })
+          .catch(() => alert('Error al anular la factura.'));
+      });
     });
   });
 </script>
