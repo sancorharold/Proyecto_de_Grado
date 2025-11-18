@@ -8,21 +8,25 @@
     <form method="post" novalidate id="frmPurchase">
         {% csrf_token %}
 
-        <!-- CABECERA DE COMPRA -->
+        <!-- ================= CABECERA DE COMPRA ================= -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">Datos de la Compra</h5>
             </div>
+
             <div class="card-body">
+
                 <div class="row g-3 mb-3">
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Proveedor</label>
                         {{ form.supplier }}
                     </div>
+
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Número Documento</label>
                         {{ form.num_document }}
                     </div>
+
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Fecha de Emisión</label>
                         {{ form.issue_date }}
@@ -36,12 +40,14 @@
                             {{ form.subtotal }}
                         </div>
                     </div>
+
                     <div class="col-lg-4 col-md-6">
                         <div class="p-3 border rounded bg-light shadow text-center">
                             <label class="form-label text-muted mb-1">IVA</label>
                             {{ form.iva }}
                         </div>
                     </div>
+
                     <div class="col-lg-4 col-md-12">
                         <div class="p-3 border rounded bg-primary text-white shadow text-center">
                             <label class="form-label text-uppercase fw-bold mb-1">Total</label>
@@ -52,12 +58,14 @@
             </div>
         </div>
 
-        <!-- DETALLE DE PRODUCTOS -->
+        <!-- ================= DETALLE DE PRODUCTOS ================= -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-dark text-white">
                 <h5 class="mb-0">Detalle de Productos</h5>
             </div>
+
             <div class="card-body">
+
                 <div class="row g-3 align-items-end">
                     <div class="col-md-4">
                         <label class="form-label">Producto</label>
@@ -107,8 +115,10 @@
                             <th>Acción</th>
                         </tr>
                     </thead>
-                    <tbody id="detalle"></tbody>
+                    <tbody id="detalle">
+                    </tbody>
                 </table>
+
             </div>
 
             <div class="text-end mt-3 pt-3 border-top">
@@ -130,4 +140,9 @@
 </script>
 
 <script src="{% static 'js/purchase/purchase.js' %}"></script>
+<<<<<<< HEAD
 {% endblock %}
+=======
+
+{% endblock %}
+>>>>>>> parent of 5750290 (ota vez ota vez)
