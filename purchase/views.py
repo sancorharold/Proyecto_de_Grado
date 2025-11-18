@@ -1,13 +1,6 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from core.mixins import TitleContextMixin
-from django.views.generic import (
-    ListView,
-    CreateView,
-    UpdateView,
-    DetailView,
-    View,
-    DeleteView,
-)
+from django.views.generic import ListView, CreateView, UpdateView, DetailView, View
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
@@ -21,24 +14,18 @@ from core.models import Product, Supplier
 from .models import Purchase, PurchaseDetail
 from .forms import PurchaseForm
 from .utils import render_to_pdf
+from commerce.commerce_mixins import QueryFilterMixin
 
 
 # ===================== LISTADO =====================
-class PurchaseListView(LoginRequiredMixin, TitleContextMixin, ListView):
+class PurchaseListView(LoginRequiredMixin, TitleContextMixin, QueryFilterMixin, ListView):
     model = Purchase
     template_name = "purchase/list.html"
     context_object_name = "purchases"
     paginate_by = 10
     title2 = "Listado de Compras"
+    search_fields = ["supplier__name", "num_document"]
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        query = self.request.GET.get("q", "")
-        if query:
-            queryset = queryset.filter(
-                Q(supplier__name__icontains=query) | Q(num_document__icontains=query)
-            )
-        return queryset
 
 
 # ===================== CREAR COMPRA =====================
@@ -72,16 +59,14 @@ class PurchaseCreateView(LoginRequiredMixin, TitleContextMixin, CreateView):
                         quantity=item["quantify"],
                         cost=item["price"],
                         subtotal=item["sub"],
-                        iva=item["iva"],
+                        iva=item["iva"]
                     )
 
                     # Aumentar stock
                     product.stock += Decimal(item["quantify"])
                     product.save()
 
-                return JsonResponse(
-                    {"msg": "Compra registrada con éxito.", "url": self.success_url}
-                )
+                return JsonResponse({"msg": "Compra registrada con éxito.", "url": self.success_url})
 
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
@@ -101,19 +86,17 @@ class PurchaseUpdateView(LoginRequiredMixin, TitleContextMixin, UpdateView):
 
         details = PurchaseDetail.objects.filter(purchase=self.object)
 
-        context["detail_purchase"] = json.dumps(
-            [
-                {
-                    "product": d.product.id,
-                    "product__description": d.product.description,
-                    "quantity": float(d.quantity),
-                    "price": float(d.cost),
-                    "subtotal": float(d.subtotal),
-                    "iva": float(d.iva),
-                }
-                for d in details
-            ]
-        )
+        context["detail_purchase"] = json.dumps([
+            {
+                "product": d.product.id,
+                "product__description": d.product.description,
+                "quantity": float(d.quantity),
+                "price": float(d.cost),
+                "subtotal": float(d.subtotal),
+                "iva": float(d.iva),
+            }
+            for d in details
+        ])
 
         return context
 
@@ -146,11 +129,29 @@ class PurchaseUpdateView(LoginRequiredMixin, TitleContextMixin, UpdateView):
                     product.stock += Decimal(item["quantify"])
                     product.save()
 
-                return JsonResponse(
-                    {"msg": "Compra actualizada con éxito.", "url": self.success_url}
-                )
+                return JsonResponse({"msg": "Compra actualizada con éxito.", "url": self.success_url})
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
+
+
+# ===================== ELIMINAR COMPRA =====================
+class PurchaseDeleteView(LoginRequiredMixin, View):
+    def post(self, request, pk, *args, **kwargs):
+        try:
+            purchase = Purchase.objects.get(pk=pk)
+
+            details = PurchaseDetail.objects.filter(purchase=purchase)
+            for d in details:
+                d.product.stock -= d.quantity
+                d.product.save()
+
+            details.delete()
+            purchase.delete()
+
+            return JsonResponse({"msg": "Compra eliminada correctamente."})
+
+        except Purchase.DoesNotExist:
+            return JsonResponse({"error": "Compra no encontrada."}, status=404)
 
 
 # ===================== ANULAR COMPRA =====================
@@ -185,33 +186,12 @@ class PurchaseDetailView(LoginRequiredMixin, DetailView):
         purchase = self.get_object()
         details = PurchaseDetail.objects.filter(purchase=purchase)
 
-        html = render_to_string(
-            self.template_name, {"purchase": purchase, "details": details}
-        )
+        html = render_to_string(self.template_name, {
+            "purchase": purchase,
+            "details": details
+        })
 
         return JsonResponse({"html": html})
-
-    # ===================== ELIMINAR COMPRA =====================
-
-
-class PurchaseDeleteView(LoginRequiredMixin, View):
-    def post(self, request, pk, *args, **kwargs):
-        try:
-            purchase = Purchase.objects.get(pk=pk)
-
-            details = PurchaseDetail.objects.filter(purchase=purchase)
-            for d in details:
-                # Revertir stock
-                d.product.stock -= d.quantity
-                d.product.save()
-
-            details.delete()
-            purchase.delete()
-
-            return JsonResponse({"msg": "Compra eliminada correctamente."})
-
-        except Purchase.DoesNotExist:
-            return JsonResponse({"error": "Compra no encontrada."}, status=404)
 
 
 # ===================== IMPRIMIR =====================

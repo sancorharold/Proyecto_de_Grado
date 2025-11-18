@@ -82,15 +82,15 @@
     // CSRF token desde el input oculto
     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-    const baseDetailUrl = "{% url 'commerce:invoice_detail' 0 %}".replace('0', '');
-    const deleteUrlBase = "{% url 'commerce:invoice_delete' 0 %}".replace('0', '');
+    const baseDetailUrl = "/commerce/invoice/detail/";
+    const deleteUrlBase = "{% url 'commerce:invoice_delete' 0 %}".replace('0', ''); 
     const annulUrlBase = "{% url 'commerce:invoice_annul' 0 %}".replace('0', '');
 
     // Ver detalle
     document.querySelectorAll('.view-detail').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        fetch(`${baseDetailUrl}${id}/`)
+         fetch(`${baseDetailUrl}${id}`)
           .then(res => res.json())
           .then(data => {
             modalContent.innerHTML = data.html;

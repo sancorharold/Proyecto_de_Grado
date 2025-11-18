@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Orden de Compra N° {{ purchase.id }}</title>
+    <style>
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+        }
+        .invoice-box {
+            max-width: 800px;
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #eee;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+            font-size: 16px;
+            line-height: 24px;
+        }
+        .invoice-box table {
+            width: 100%;
+            line-height: inherit;
+            text-align: left;
+            border-collapse: collapse;
+        }
+        .invoice-box table td { padding: 5px; vertical-align: top; }
+        .invoice-box table tr.top table td { padding-bottom: 20px; }
+        .invoice-box table tr.information table td { padding-bottom: 40px; }
+        .invoice-box table tr.heading td {
+            background: #eee;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+            text-align: center;
+        }
+        .invoice-box table tr.item td { border-bottom: 1px solid #eee; }
+        .invoice-box table tr.total td:nth-child(2) {
+            border-top: 2px solid #eee;
+            font-weight: bold;
+        }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="invoice-box">
+        <table>
+            <tr class="top">
+                <td colspan="4">
+                    <table>
+                        <tr>
+                            <td>
+                                <strong>Orden de Compra #:</strong> {{ purchase.id }}<br>
+                                <strong>Fecha:</strong> {{ purchase.issue_date|date:"d/m/Y" }}<br>
+                                <strong>Documento Ref:</strong> {{ purchase.num_document|default:"S/N" }}
+                            </td>
+                            <td class="text-right">
+                                <strong>Super Mercado Economico</strong><br>
+                                Dirección de la Empresa<br>
+                                RUC: 1234567890001
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr class="information">
+                <td colspan="4">
+                    <table>
+                        <tr>
+                            <td>
+                                <strong>Proveedor:</strong> {{ purchase.supplier.name }}<br>
+                                <strong>RUC:</strong> {{ purchase.supplier.ruc }}<br>
+                                <strong>Dirección:</strong> {{ purchase.supplier.address }}
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr class="heading">
+                <td>Producto</td>
+                <td>Cantidad</td>
+                <td>Costo Unit.</td>
+                <td class="text-right">Subtotal</td>
+            </tr>
+            {% for detail in purchase.detail.all %}
+            <tr class="item">
+                <td>{{ detail.product.description }}</td>
+                <td class="text-center">{{ detail.quantity|floatformat:2 }}</td>
+                <td class="text-center">${{ detail.cost|floatformat:2 }}</td>
+                <td class="text-right">${{ detail.subtotal|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total">
+                <td colspan="3" class="text-right"><strong>Total:</strong></td>
+                <td class="text-right"><strong>${{ purchase.total|floatformat:2 }}</strong></td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

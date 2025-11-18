@@ -1,28 +1,14 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
-from core.mixins import TitleContextMixin
-from core.models import Product
-from core.utils import custom_serializer
-from .forms import InvoiceForm
-from .models import Invoice, InvoiceDetail
-from django.db.models import Q
-from django.urls import reverse_lazy
-from django.views.generic import CreateView, ListView, UpdateView, DetailView, View
-from django.contrib import messages
-from django.http import JsonResponse, HttpResponse
-from decimal import Decimal
-from django.db import transaction
-from django.template.loader import render_to_string
 import json
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.http import JsonResponse
 from django.urls import reverse_lazy
 from django.db.models import Q
+from django.template.loader import render_to_string
+from django.http import JsonResponse
 from django.views.generic import (
     ListView,
     CreateView,
     UpdateView,
-    DeleteView,
     View,
     DetailView,
 )
@@ -33,23 +19,22 @@ from core.models import Product
 from .forms import InvoiceForm
 from .utils import render_to_pdf
 
+from core.mixins import TitleContextMixin
+from .models import Invoice, InvoiceDetail
+from core.models import Product
+from .forms import InvoiceForm
+from .utils import render_to_pdf
 
-class InvoiceListView(LoginRequiredMixin, TitleContextMixin, ListView):
+from commerce.commerce_mixins import QueryFilterMixin
+
+class InvoiceListView(LoginRequiredMixin, TitleContextMixin, QueryFilterMixin, ListView):
     model = Invoice
     template_name = "invoice/list.html"
     context_object_name = "invoices"
     paginate_by = 10
     title2 = "Listado de Facturas"
+    search_fields = ["customer__first_name", "customer__last_name"]
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        query = self.request.GET.get("q", "")
-        if query:
-            queryset = queryset.filter(
-                Q(customer__first_name__icontains=query)
-                | Q(customer__last_name__icontains=query)
-            )
-        return queryset
 
 
 class InvoiceCreateView(LoginRequiredMixin, TitleContextMixin, CreateView):
@@ -91,8 +76,6 @@ class InvoiceCreateView(LoginRequiredMixin, TitleContextMixin, CreateView):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
 
-
-from django.http import JsonResponse
 
 class InvoiceUpdateView(LoginRequiredMixin, TitleContextMixin, UpdateView):
     model = Invoice
@@ -156,10 +139,12 @@ class InvoiceDetailView(LoginRequiredMixin, DetailView):
     template_name = "invoice/detail_modal.html"
 
     def get(self, request, *args, **kwargs):
-        from django.template.loader import render_to_string
-
         invoice = self.get_object()
-        html = render_to_string(self.template_name, {"invoice": invoice})
+        context = {
+            "invoice": invoice,
+            "details": invoice.detail.all()  # Pasamos los detalles a la plantilla
+        }
+        html = render_to_string(self.template_name, context)
         return JsonResponse({"html": html})
 
 

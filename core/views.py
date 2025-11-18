@@ -25,6 +25,7 @@ from django.views.generic import (
     DetailView,
 )
 from django.views import View
+from commerce.commerce_mixins import QueryFilterMixin
 
 
 def home(request):
@@ -52,25 +53,15 @@ class HomeTemplateView(LoginRequiredMixin, TitleContextMixin, TemplateView):
         return context
 
 
-class SupplierListView(LoginRequiredMixin, TitleContextMixin, ListView):
+class SupplierListView(LoginRequiredMixin, TitleContextMixin, QueryFilterMixin, ListView):
     model = Supplier
-    template_name = "supplier/list.html"  # Nombre del template a usar
-    context_object_name = "suppliers"  # Nombre del contexto a pasar al template
+    template_name = "supplier/list.html"
+    context_object_name = "suppliers"
     paginate_by = 10
-    title1 = None
-    title2 = None
     title1 = "Autor | TeacherCode"
     title2 = "Listado de Proveedores mixings"
+    search_fields = ["name", "ruc"]
 
-    def get_queryset(self):
-        # Se Puede personalizar el queryset aquí si es necesario
-        queryset = super().get_queryset()  # self.model.objects.all()
-        query = self.request.GET.get("q", "")
-        if query:
-            queryset = queryset.filter(
-                Q(name__icontains=query) | Q(ruc__icontains=query)
-            )
-        return queryset
 
 
 class SupplierCreateView(LoginRequiredMixin, TitleContextMixin, CreateView):
@@ -157,6 +148,26 @@ class SupplierDeleteView(LoginRequiredMixin, TitleContextMixin, DeleteView):
     success_url = reverse_lazy("core:supplier_list")
     title1 = "Eliminar"
     title2 = "Eliminar Proveedor VBC"
+
+    def form_valid(self, form):
+        supplier = self.get_object()
+
+        # Verificar si hay marcas asociadas
+        if supplier.brands.exists():
+            messages.error(
+                self.request,
+                "No se puede eliminar este proveedor porque tiene marcas asociadas.",
+            )
+            return redirect("core:supplier_list")
+
+        # Verificar si hay compras asociadas
+        if supplier.purchase_suppliers.exists():
+            messages.error(
+                self.request, "No se puede eliminar este proveedor porque tiene compras registradas."
+            )
+            return redirect("core:supplier_list")
+
+        return super().form_valid(form)
 
 
 class CustomerSearchView(LoginRequiredMixin, View):
